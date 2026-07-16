@@ -1171,6 +1171,38 @@ function renderStudentDetail(student, summary, grades) {
     container.appendChild(chartSection);
   }
 
+  // Bulletins PDF
+  const reportsDiv = document.createElement('div');
+  reportsDiv.id = 'reports-section';
+  reportsDiv.innerHTML = '<div class="section"><div class="section-header"><h3 class="section-title">📄 Bulletins</h3></div><div class="section-body" id="reports-body"><div style="color:#64748b;font-size:.85rem">Chargement...</div></div></div>';
+  container.appendChild(reportsDiv);
+
+  // Fetch reports
+  apiFetch('/api/reports/' + student.id).then(reports => {
+    const body = document.getElementById('reports-body');
+    if (!reports || !reports.length) {
+      body.innerHTML = '<div style="color:#64748b;font-size:.85rem">Aucun bulletin disponible</div>';
+      return;
+    }
+    body.innerHTML = reports.map(r => `
+      <div style="display:flex;align-items:center;gap:1rem;padding:.75rem 0;border-bottom:1px solid #1e293b">
+        <div style="flex:1">
+          <div style="font-weight:600;font-size:.9rem">${r.report_name}</div>
+          <div style="color:#64748b;font-size:.8rem">${r.school_year} · ${r.report_date}</div>
+        </div>
+        <a href="${r.pdf_url}" target="_blank" class="btn btn-sm btn-secondary">
+          📄 Voir le PDF
+        </a>
+        <a href="${r.pdf_url}" download class="btn btn-sm btn-primary">
+          ⬇ Télécharger
+        </a>
+      </div>
+    `).join('');
+  }).catch(() => {
+    const body = document.getElementById('reports-body');
+    if (body) body.innerHTML = '<div style="color:#64748b;font-size:.85rem">Aucun bulletin disponible</div>';
+  });
+
   // By-period tabs
   const gradeSection = document.createElement('div');
   gradeSection.className = 'section';

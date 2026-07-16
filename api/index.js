@@ -77,6 +77,17 @@ async function initDB() {
       CREATE INDEX IF NOT EXISTS idx_grades_course ON grades(course);
       CREATE INDEX IF NOT EXISTS idx_us_user ON user_students(user_id);
       CREATE INDEX IF NOT EXISTS idx_us_student ON user_students(student_id);
+
+      CREATE TABLE IF NOT EXISTS reports (
+        id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+        student_id text NOT NULL REFERENCES students(id) ON DELETE CASCADE,
+        report_name text NOT NULL,
+        school_year text DEFAULT '',
+        report_date text DEFAULT '',
+        pdf_url text DEFAULT '',
+        fetched_at timestamptz DEFAULT now()
+      );
+      CREATE INDEX IF NOT EXISTS idx_reports_student ON reports(student_id);
     `);
     console.log('✅ Database tables initialized');
   } catch (e) {
@@ -574,6 +585,28 @@ app.post('/api/students/link-by-creds', requireAuth, async (req, res) => {
     res.json({ success: true, student: { id: s.id, name: s.name, school: s.school } });
   } catch (e) {
     console.error('Link by creds error:', e);
+    res.status(500).json({ error: 'Erreur serveur' });
+  }
+});
+
+// ─── Reports (bulletins PDF) ──────────────────────────────────────────────────
+
+app.get('/api/reports/:studentId', requireAuth, async (req, res) => {
+  try {
+    const link = await pool.query(
+      'SELECT 1 FROM user_students WHERE user_id = $1 AND student_id = $2',
+      [req.user.id, req.params.studentId]
+    );
+    if (req.user.role !== 'admin' && !link.rows.length) {
+      return res.status(403).json({ error: 'Non autorisé' });
+    }
+    const result = await pool.query(
+      'SELECT id, report_name, school_year, report_date, pdf_url FROM reports WHERE student_id = $1 ORDER BY report_date DESC',
+      [req.params.studentId]
+    );
+    res.json(result.rows);
+  } catch (e) {
+    console.error('Reports error:', e);
     res.status(500).json({ error: 'Erreur serveur' });
   }
 });
