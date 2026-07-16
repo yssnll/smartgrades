@@ -45,7 +45,13 @@ def check_connection(school, username, password, dob):
 
         data = {inp['name']: inp.get('value', '')
                 for inp in form.select('input[name]')}
-        data.update({'username': username, 'password': password})
+        # SmartSchool uses namespaced fields like login_form[_username]
+        for inp in form.select('input[name]'):
+            n = inp['name']
+            if '_username' in n:
+                data[n] = username
+            elif '_password' in n:
+                data[n] = password
 
         action = form.get('action') or r.url
         if not action.startswith('http'):
