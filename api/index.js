@@ -89,6 +89,12 @@ async function initDB() {
       );
       CREATE INDEX IF NOT EXISTS idx_reports_student ON reports(student_id);
     `);
+    // Idempotent migration: add conn tracking columns if missing
+    await client.query(`
+      ALTER TABLE students
+        ADD COLUMN IF NOT EXISTS conn_status text DEFAULT 'ok',
+        ADD COLUMN IF NOT EXISTS conn_error  text DEFAULT '';
+    `);
     console.log('✅ Database tables initialized');
   } catch (e) {
     console.error('❌ DB init error:', e.message);
@@ -252,7 +258,7 @@ app.get('/api/me', requireAuth, async (req, res) => {
 app.get('/api/students', requireAuth, async (req, res) => {
   try {
     const result = await pool.query(
-      `SELECT s.id, s.name, s.school, s.username, us.created_at AS linked_at
+      `SELECT s.id, s.name, s.school, s.username, s.conn_status, s.conn_error, us.created_at AS linked_at
        FROM students s
        INNER JOIN user_students us ON us.student_id = s.id
        WHERE us.user_id = $1
@@ -495,6 +501,8 @@ app.get('/api/overview', requireAuth, async (req, res) => {
          s.name,
          s.school,
          s.username,
+         s.conn_status,
+         s.conn_error,
          ROUND(AVG(g.grade_value)::numeric, 2) AS average,
          COUNT(g.id) AS total_grades,
          COUNT(DISTINCT g.course) AS total_courses,
@@ -503,7 +511,7 @@ app.get('/api/overview', requireAuth, async (req, res) => {
        INNER JOIN user_students us ON us.student_id = s.id
        LEFT JOIN grades g ON g.student_id = s.id AND g.does_count = true AND g.grade_value IS NOT NULL
        WHERE us.user_id = $1
-       GROUP BY s.id, s.name, s.school, s.username
+       GROUP BY s.id, s.name, s.school, s.username, s.conn_status, s.conn_error
        ORDER BY s.name`,
       [req.user.id]
     );
@@ -633,9 +641,12 @@ app.get('/api/reports/:studentId', requireAuth, async (req, res) => {
 app.get('/api/sync-status', requireAuth, async (req, res) => {
   try {
     const result = await pool.query(
-      `SELECT student_id, MAX(fetched_at) as last_sync FROM grades g
-       INNER JOIN user_students us ON us.student_id = g.student_id AND us.user_id = $1
-       GROUP BY student_id`,
+      `SELECT s.id AS student_id, s.name, s.conn_status, s.conn_error,
+              MAX(g.fetched_at) as last_sync
+       FROM students s
+       INNER JOIN user_students us ON us.student_id = s.id AND us.user_id = $1
+       LEFT JOIN grades g ON g.student_id = s.id
+       GROUP BY s.id, s.name, s.conn_status, s.conn_error`,
       [req.user.id]
     );
     res.json({ synced: true, students: result.rows });
@@ -662,3 +673,4 @@ if (process.env.VERCEL) {
     console.log(`   DATABASE_URL: ${process.env.DATABASE_URL ? '✅ set' : '❌ NOT SET'}`);
   });
 }
+
