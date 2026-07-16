@@ -1,0 +1,1403 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>SmartGrades</title>
+<style>
+/* ─── Reset & Base ─────────────────────────────────────────────── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{font-size:16px;-webkit-text-size-adjust:100%}
+body{
+  font-family:'Segoe UI',system-ui,-apple-system,sans-serif;
+  background:#020617;
+  color:#e2e8f0;
+  min-height:100vh;
+  line-height:1.5;
+}
+a{color:inherit;text-decoration:none}
+button{cursor:pointer;font-family:inherit}
+input,select{font-family:inherit}
+
+/* ─── Scrollbar ────────────────────────────────────────────────── */
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-track{background:#0f172a}
+::-webkit-scrollbar-thumb{background:#334155;border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:#475569}
+
+/* ─── Typography ───────────────────────────────────────────────── */
+h1{font-size:1.875rem;font-weight:700;letter-spacing:-0.025em}
+h2{font-size:1.5rem;font-weight:700}
+h3{font-size:1.125rem;font-weight:600}
+h4{font-size:1rem;font-weight:600}
+
+/* ─── Layout ───────────────────────────────────────────────────── */
+.app{display:flex;flex-direction:column;min-height:100vh}
+
+/* ─── Auth Screen ──────────────────────────────────────────────── */
+#auth-screen{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  min-height:100vh;
+  padding:1.5rem;
+  background:radial-gradient(ellipse 120% 100% at 50% -10%,#1e3a5f 0%,#020617 55%);
+}
+.auth-card{
+  background:#0f172a;
+  border:1px solid #1e293b;
+  border-radius:1rem;
+  padding:2.5rem;
+  width:100%;
+  max-width:420px;
+  box-shadow:0 25px 50px -12px rgba(0,0,0,.7);
+}
+.auth-logo{
+  display:flex;
+  align-items:center;
+  gap:.625rem;
+  margin-bottom:2rem;
+  justify-content:center;
+}
+.auth-logo svg{width:2rem;height:2rem}
+.auth-logo-text{font-size:1.5rem;font-weight:800;background:linear-gradient(135deg,#60a5fa,#818cf8);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.auth-tabs{
+  display:flex;
+  background:#020617;
+  border-radius:.625rem;
+  padding:.25rem;
+  margin-bottom:2rem;
+  gap:.25rem;
+}
+.auth-tab{
+  flex:1;
+  padding:.5rem 1rem;
+  border:none;
+  background:transparent;
+  color:#64748b;
+  border-radius:.5rem;
+  font-size:.875rem;
+  font-weight:500;
+  transition:all .2s;
+}
+.auth-tab.active{background:#1e293b;color:#e2e8f0;box-shadow:0 1px 3px rgba(0,0,0,.4)}
+.form-group{margin-bottom:1.25rem}
+.form-label{display:block;font-size:.8125rem;font-weight:500;color:#94a3b8;margin-bottom:.375rem}
+.form-input{
+  width:100%;
+  background:#020617;
+  border:1px solid #1e293b;
+  border-radius:.5rem;
+  padding:.625rem .875rem;
+  color:#e2e8f0;
+  font-size:.875rem;
+  transition:border-color .2s,box-shadow .2s;
+  outline:none;
+}
+.form-input:focus{border-color:#3b82f6;box-shadow:0 0 0 3px rgba(59,130,246,.15)}
+.form-input::placeholder{color:#475569}
+.btn{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:.5rem;
+  padding:.625rem 1.25rem;
+  border-radius:.5rem;
+  font-size:.875rem;
+  font-weight:600;
+  border:none;
+  transition:all .2s;
+  white-space:nowrap;
+}
+.btn-primary{
+  background:linear-gradient(135deg,#2563eb,#4f46e5);
+  color:#fff;
+  box-shadow:0 4px 14px rgba(37,99,235,.35);
+}
+.btn-primary:hover{background:linear-gradient(135deg,#1d4ed8,#4338ca);transform:translateY(-1px);box-shadow:0 6px 20px rgba(37,99,235,.45)}
+.btn-primary:active{transform:translateY(0)}
+.btn-secondary{background:#1e293b;color:#94a3b8;border:1px solid #334155}
+.btn-secondary:hover{background:#334155;color:#e2e8f0}
+.btn-danger{background:#7f1d1d;color:#fca5a5;border:1px solid #991b1b}
+.btn-danger:hover{background:#991b1b;color:#fecaca}
+.btn-sm{padding:.375rem .75rem;font-size:.8125rem}
+.btn-full{width:100%}
+.btn:disabled{opacity:.5;pointer-events:none}
+.alert{
+  padding:.75rem 1rem;
+  border-radius:.5rem;
+  font-size:.8125rem;
+  margin-bottom:1rem;
+}
+.alert-error{background:#1c0a0a;border:1px solid #7f1d1d;color:#fca5a5}
+.alert-success{background:#052e16;border:1px solid #14532d;color:#86efac}
+
+/* ─── App Shell ────────────────────────────────────────────────── */
+#app-shell{display:none;flex-direction:column;min-height:100vh}
+
+/* ─── Navbar ───────────────────────────────────────────────────── */
+.navbar{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:0 1.5rem;
+  height:3.5rem;
+  background:#0f172a;
+  border-bottom:1px solid #1e293b;
+  position:sticky;
+  top:0;
+  z-index:100;
+  gap:1rem;
+}
+.nav-logo{display:flex;align-items:center;gap:.5rem;font-weight:800;font-size:1.125rem}
+.nav-logo svg{width:1.5rem;height:1.5rem}
+.nav-logo-gradient{background:linear-gradient(135deg,#60a5fa,#818cf8);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.nav-links{display:flex;align-items:center;gap:.25rem}
+.nav-link{
+  padding:.375rem .75rem;
+  border-radius:.5rem;
+  font-size:.875rem;
+  font-weight:500;
+  color:#64748b;
+  transition:all .2s;
+  cursor:pointer;
+  border:none;
+  background:none;
+}
+.nav-link:hover{color:#e2e8f0;background:#1e293b}
+.nav-link.active{color:#60a5fa;background:#0c1a2e}
+.nav-right{display:flex;align-items:center;gap:.75rem}
+.user-chip{
+  display:flex;
+  align-items:center;
+  gap:.5rem;
+  background:#1e293b;
+  border-radius:2rem;
+  padding:.25rem .75rem .25rem .25rem;
+  font-size:.8125rem;
+}
+.user-avatar{
+  width:1.75rem;height:1.75rem;
+  border-radius:50%;
+  background:linear-gradient(135deg,#2563eb,#7c3aed);
+  display:flex;align-items:center;justify-content:center;
+  font-size:.75rem;font-weight:700;color:#fff;
+  flex-shrink:0;
+}
+.user-name{color:#cbd5e1;font-weight:500;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* ─── Main Content ─────────────────────────────────────────────── */
+.main-content{flex:1;overflow-y:auto}
+.view{display:none;animation:fadeIn .25s ease}
+.view.active{display:block}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.page{max-width:1200px;margin:0 auto;padding:2rem 1.5rem}
+
+/* ─── Hero ─────────────────────────────────────────────────────── */
+.hero{
+  background:linear-gradient(135deg,#0c1a2e 0%,#0f172a 60%,#1a0533 100%);
+  border-bottom:1px solid #1e293b;
+  padding:2.5rem 1.5rem 2rem;
+}
+.hero-inner{max-width:1200px;margin:0 auto}
+.hero-title{font-size:1.75rem;font-weight:800;margin-bottom:.375rem}
+.hero-sub{color:#64748b;font-size:.9375rem}
+.hero-gradient{background:linear-gradient(135deg,#60a5fa,#818cf8);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+
+/* ─── Stats Strip ──────────────────────────────────────────────── */
+.stats-strip{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(160px,1fr));
+  gap:1rem;
+  margin-bottom:2rem;
+}
+.stat-card{
+  background:#0f172a;
+  border:1px solid #1e293b;
+  border-radius:.75rem;
+  padding:1.25rem;
+}
+.stat-label{font-size:.75rem;color:#64748b;font-weight:500;text-transform:uppercase;letter-spacing:.05em;margin-bottom:.375rem}
+.stat-value{font-size:1.625rem;font-weight:800;letter-spacing:-0.02em}
+.stat-sub{font-size:.75rem;color:#64748b;margin-top:.25rem}
+
+/* ─── Student Cards Grid ───────────────────────────────────────── */
+.students-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(300px,1fr));
+  gap:1.25rem;
+  margin-bottom:2rem;
+}
+.student-card{
+  background:#0f172a;
+  border:1px solid #1e293b;
+  border-radius:1rem;
+  overflow:hidden;
+  transition:border-color .2s,transform .2s,box-shadow .2s;
+  cursor:pointer;
+}
+.student-card:hover{border-color:#334155;transform:translateY(-2px);box-shadow:0 8px 30px rgba(0,0,0,.4)}
+.student-card-header{
+  padding:1.25rem 1.25rem .75rem;
+  display:flex;align-items:center;gap:.875rem;
+}
+.student-avatar{
+  width:3rem;height:3rem;
+  border-radius:.75rem;
+  background:linear-gradient(135deg,#1d4ed8,#6d28d9);
+  display:flex;align-items:center;justify-content:center;
+  font-size:1.125rem;font-weight:700;color:#fff;
+  flex-shrink:0;
+}
+.student-meta{flex:1;min-width:0}
+.student-name{font-weight:700;font-size:1rem;margin-bottom:.125rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.student-school{font-size:.8125rem;color:#64748b;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.student-avg-badge{
+  flex-shrink:0;
+  width:3rem;height:3rem;
+  border-radius:.75rem;
+  display:flex;align-items:center;justify-content:center;
+  flex-direction:column;
+  font-size:.625rem;font-weight:600;text-transform:uppercase;letter-spacing:.05em;
+}
+.student-avg-value{font-size:1.25rem;font-weight:800;line-height:1}
+.student-card-body{padding:.5rem 1.25rem 1.25rem}
+.mini-bar-list{display:flex;flex-direction:column;gap:.375rem}
+.mini-bar-item{display:flex;align-items:center;gap:.625rem}
+.mini-bar-course{font-size:.75rem;color:#94a3b8;width:100px;flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mini-bar-track{flex:1;height:.375rem;background:#1e293b;border-radius:9999px;overflow:hidden}
+.mini-bar-fill{height:100%;border-radius:9999px;transition:width .6s ease}
+.mini-bar-val{font-size:.75rem;font-weight:600;width:2.5rem;text-align:right;flex-shrink:0}
+.student-card-footer{
+  padding:.75rem 1.25rem;
+  border-top:1px solid #1e293b;
+  display:flex;align-items:center;justify-content:space-between;
+}
+.grade-count{font-size:.8125rem;color:#64748b}
+
+/* ─── Grade Colors ─────────────────────────────────────────────── */
+.grade-green{color:#4ade80}
+.grade-yellow{color:#facc15}
+.grade-orange{color:#fb923c}
+.grade-red{color:#f87171}
+.bg-grade-green{background:#052e16;border-color:#14532d}
+.bg-grade-yellow{background:#1c1a05;border-color:#713f12}
+.bg-grade-orange{background:#1c0f05;border-color:#7c2d12}
+.bg-grade-red{background:#1c0a0a;border-color:#7f1d1d}
+.fill-green{background:#4ade80}
+.fill-yellow{background:#facc15}
+.fill-orange{background:#fb923c}
+.fill-red{background:#f87171}
+
+/* ─── Bar Chart ────────────────────────────────────────────────── */
+.bar-chart{padding:1rem 0}
+.bar-item{display:flex;align-items:center;gap:.75rem;margin-bottom:.875rem}
+.bar-label{
+  font-size:.8125rem;color:#94a3b8;
+  width:160px;flex-shrink:0;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  text-align:right;
+}
+.bar-track{
+  flex:1;height:1.5rem;
+  background:#1e293b;
+  border-radius:.375rem;
+  overflow:hidden;
+  position:relative;
+}
+.bar-fill{
+  height:100%;
+  border-radius:.375rem;
+  transition:width .8s cubic-bezier(.4,0,.2,1);
+  display:flex;align-items:center;justify-content:flex-end;
+  padding-right:.5rem;
+  font-size:.75rem;font-weight:700;color:#fff;
+  min-width:2rem;
+}
+.bar-value{font-size:.875rem;font-weight:700;width:3.5rem;text-align:right;flex-shrink:0}
+
+/* ─── Section ──────────────────────────────────────────────────── */
+.section{
+  background:#0f172a;
+  border:1px solid #1e293b;
+  border-radius:1rem;
+  margin-bottom:1.5rem;
+  overflow:hidden;
+}
+.section-header{
+  padding:1.25rem 1.5rem;
+  border-bottom:1px solid #1e293b;
+  display:flex;align-items:center;justify-content:space-between;
+  gap:1rem;
+}
+.section-title{font-size:1rem;font-weight:700;display:flex;align-items:center;gap:.625rem}
+.section-body{padding:1.5rem}
+
+/* ─── Filters Bar ──────────────────────────────────────────────── */
+.filters-bar{
+  display:flex;
+  flex-wrap:wrap;
+  gap:.75rem;
+  padding:1rem 1.5rem;
+  border-bottom:1px solid #1e293b;
+  background:#070f1a;
+}
+.filter-input{
+  background:#020617;
+  border:1px solid #1e293b;
+  border-radius:.5rem;
+  padding:.4375rem .75rem;
+  color:#e2e8f0;
+  font-size:.8125rem;
+  outline:none;
+  transition:border-color .2s;
+}
+.filter-input:focus{border-color:#3b82f6}
+.filter-select{min-width:140px}
+.filter-search{flex:1;min-width:200px}
+
+/* ─── Table ────────────────────────────────────────────────────── */
+.table-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:.8125rem}
+thead tr{border-bottom:1px solid #1e293b}
+th{
+  padding:.75rem 1rem;
+  text-align:left;
+  font-size:.75rem;
+  font-weight:600;
+  color:#64748b;
+  text-transform:uppercase;
+  letter-spacing:.05em;
+  white-space:nowrap;
+}
+td{
+  padding:.75rem 1rem;
+  border-bottom:1px solid #0f172a;
+  color:#cbd5e1;
+  vertical-align:middle;
+}
+tbody tr{transition:background .15s}
+tbody tr:hover{background:#0a1628}
+tbody tr:last-child td{border-bottom:none}
+.td-course{font-weight:600;color:#e2e8f0;max-width:180px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.td-eval{max-width:200px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#94a3b8}
+.td-grade{font-weight:700;font-size:.9375rem}
+.grade-chip{
+  display:inline-block;
+  padding:.125rem .5rem;
+  border-radius:9999px;
+  font-size:.75rem;font-weight:600;
+  border:1px solid transparent;
+}
+.td-no-count{opacity:.5;font-style:italic}
+.empty-row td{text-align:center;padding:3rem 1rem;color:#475569;font-size:.9375rem}
+
+/* ─── Tabs ─────────────────────────────────────────────────────── */
+.tab-bar{
+  display:flex;
+  gap:.375rem;
+  padding:.75rem 1.5rem;
+  border-bottom:1px solid #1e293b;
+  overflow-x:auto;
+}
+.tab-btn{
+  padding:.375rem .875rem;
+  border:none;
+  border-radius:.5rem;
+  background:transparent;
+  color:#64748b;
+  font-size:.8125rem;font-weight:500;
+  cursor:pointer;
+  white-space:nowrap;
+  transition:all .15s;
+}
+.tab-btn.active{background:#1e3a5f;color:#60a5fa}
+.tab-btn:hover:not(.active){background:#1e293b;color:#e2e8f0}
+
+/* ─── Back Button ──────────────────────────────────────────────── */
+.back-btn{
+  display:inline-flex;align-items:center;gap:.5rem;
+  padding:.375rem .75rem;
+  border-radius:.5rem;
+  font-size:.875rem;font-weight:500;
+  color:#64748b;
+  cursor:pointer;
+  border:none;background:none;
+  transition:all .15s;
+  margin-bottom:1.25rem;
+}
+.back-btn:hover{color:#e2e8f0;background:#1e293b}
+
+/* ─── Student Detail Header ────────────────────────────────────── */
+.detail-hero{
+  background:linear-gradient(135deg,#0c1a2e,#0f172a,#1a0533);
+  border-bottom:1px solid #1e293b;
+  padding:2rem 1.5rem 1.5rem;
+}
+.detail-hero-inner{max-width:1200px;margin:0 auto}
+.detail-student-info{display:flex;align-items:center;gap:1.25rem;margin-bottom:1.5rem}
+.detail-avatar{
+  width:4rem;height:4rem;
+  border-radius:1rem;
+  background:linear-gradient(135deg,#1d4ed8,#6d28d9);
+  display:flex;align-items:center;justify-content:center;
+  font-size:1.5rem;font-weight:700;color:#fff;
+  flex-shrink:0;
+}
+.detail-meta{}
+.detail-name{font-size:1.5rem;font-weight:800}
+.detail-school{color:#64748b}
+.detail-stats{display:flex;gap:1rem;flex-wrap:wrap}
+.detail-stat{
+  background:rgba(255,255,255,.04);
+  border:1px solid rgba(255,255,255,.06);
+  border-radius:.625rem;
+  padding:.625rem 1rem;
+  text-align:center;
+  min-width:80px;
+}
+.detail-stat-val{font-size:1.25rem;font-weight:800}
+.detail-stat-label{font-size:.6875rem;color:#64748b;text-transform:uppercase;letter-spacing:.05em;margin-top:.125rem}
+
+/* ─── Admin / Link Section ─────────────────────────────────────── */
+.search-box{position:relative;flex:1}
+.search-box .form-input{padding-left:2.25rem}
+.search-icon{position:absolute;left:.75rem;top:50%;transform:translateY(-50%);color:#475569}
+.search-results{
+  background:#0a1628;
+  border:1px solid #1e293b;
+  border-radius:.5rem;
+  margin-top:.5rem;
+  overflow:hidden;
+}
+.search-result-item{
+  padding:.75rem 1rem;
+  display:flex;align-items:center;justify-content:space-between;
+  gap:1rem;
+  border-bottom:1px solid #1e293b;
+  transition:background .15s;
+}
+.search-result-item:last-child{border-bottom:none}
+.search-result-item:hover{background:#0f172a}
+.search-result-info{}
+.search-result-name{font-weight:600;font-size:.9rem}
+.search-result-sub{font-size:.8rem;color:#64748b}
+.linked-student-row{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:.875rem 1.25rem;
+  border-bottom:1px solid #1e293b;
+  gap:1rem;
+}
+.linked-student-row:last-child{border-bottom:none}
+.linked-info{display:flex;align-items:center;gap:.875rem}
+.linked-avatar{
+  width:2.25rem;height:2.25rem;
+  border-radius:.5rem;
+  background:linear-gradient(135deg,#1d4ed8,#6d28d9);
+  display:flex;align-items:center;justify-content:center;
+  font-size:.875rem;font-weight:700;color:#fff;
+  flex-shrink:0;
+}
+.linked-name{font-weight:600}
+.linked-school{font-size:.8125rem;color:#64748b}
+.linked-actions{display:flex;gap:.5rem;flex-shrink:0}
+
+/* ─── Empty State ──────────────────────────────────────────────── */
+.empty-state{
+  text-align:center;
+  padding:4rem 1.5rem;
+  color:#475569;
+}
+.empty-icon{font-size:3rem;margin-bottom:1rem}
+.empty-title{font-size:1.125rem;font-weight:600;color:#64748b;margin-bottom:.375rem}
+.empty-desc{font-size:.875rem}
+
+/* ─── Loading ──────────────────────────────────────────────────── */
+.loading{display:flex;align-items:center;justify-content:center;padding:4rem 1.5rem;color:#475569;gap:.75rem}
+.spinner{
+  width:1.5rem;height:1.5rem;
+  border:2px solid #1e293b;
+  border-top-color:#3b82f6;
+  border-radius:50%;
+  animation:spin .6s linear infinite;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ─── Toast ────────────────────────────────────────────────────── */
+#toast{
+  position:fixed;bottom:1.5rem;right:1.5rem;
+  background:#0f172a;border:1px solid #1e293b;
+  color:#e2e8f0;
+  padding:.75rem 1.25rem;
+  border-radius:.625rem;
+  font-size:.875rem;
+  box-shadow:0 8px 30px rgba(0,0,0,.5);
+  z-index:9999;
+  transform:translateY(calc(100% + 2rem));
+  transition:transform .3s cubic-bezier(.4,0,.2,1),opacity .3s;
+  opacity:0;
+  max-width:320px;
+}
+#toast.show{transform:translateY(0);opacity:1}
+#toast.toast-success{border-color:#14532d;background:#052e16;color:#86efac}
+#toast.toast-error{border-color:#7f1d1d;background:#1c0a0a;color:#fca5a5}
+
+/* ─── No data ──────────────────────────────────────────────────── */
+.no-data{
+  text-align:center;padding:2rem;
+  color:#475569;font-size:.875rem;
+}
+
+/* ─── Period pill ──────────────────────────────────────────────── */
+.period-pill{
+  display:inline-block;padding:.125rem .625rem;
+  border-radius:9999px;font-size:.75rem;font-weight:600;
+  background:#1e3a5f;color:#93c5fd;
+  border:1px solid #1e40af;
+}
+
+/* ─── Responsive ───────────────────────────────────────────────── */
+@media(max-width:640px){
+  .page{padding:1.25rem 1rem}
+  .hero,.detail-hero{padding:1.5rem 1rem 1.25rem}
+  .hero-title{font-size:1.375rem}
+  .detail-name{font-size:1.25rem}
+  .students-grid{grid-template-columns:1fr}
+  .bar-label{width:110px;font-size:.75rem}
+  .nav-links .nav-link span{display:none}
+  .section-body{padding:1rem}
+  .section-header{padding:1rem}
+  th,td{padding:.625rem .75rem}
+  .filters-bar{padding:.75rem}
+  .tab-bar{padding:.5rem .75rem}
+}
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════════ AUTH ═══════ -->
+<div id="auth-screen">
+  <div class="auth-card">
+    <div class="auth-logo">
+      <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect width="32" height="32" rx="8" fill="url(#lg)"/>
+        <path d="M8 22L12 14L16 18L20 10L24 16" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+        <defs><linearGradient id="lg" x1="0" y1="0" x2="32" y2="32" gradientUnits="userSpaceOnUse"><stop stop-color="#2563eb"/><stop offset="1" stop-color="#7c3aed"/></linearGradient></defs>
+      </svg>
+      <span class="auth-logo-text">SmartGrades</span>
+    </div>
+
+    <div class="auth-tabs">
+      <button class="auth-tab active" onclick="switchAuthTab('login')">Connexion</button>
+      <button class="auth-tab" onclick="switchAuthTab('register')">Inscription</button>
+    </div>
+
+    <div id="auth-alert"></div>
+
+    <!-- Login Form -->
+    <form id="login-form" onsubmit="handleLogin(event)">
+      <div class="form-group">
+        <label class="form-label">Adresse e-mail</label>
+        <input class="form-input" type="email" id="login-email" placeholder="vous@exemple.com" required autocomplete="email" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Mot de passe</label>
+        <input class="form-input" type="password" id="login-password" placeholder="••••••••" required autocomplete="current-password" />
+      </div>
+      <button class="btn btn-primary btn-full" type="submit" id="login-btn">Se connecter</button>
+    </form>
+
+    <!-- Register Form -->
+    <form id="register-form" style="display:none" onsubmit="handleRegister(event)">
+      <div class="form-group">
+        <label class="form-label">Nom complet</label>
+        <input class="form-input" type="text" id="reg-name" placeholder="Votre nom" required autocomplete="name" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Adresse e-mail</label>
+        <input class="form-input" type="email" id="reg-email" placeholder="vous@exemple.com" required autocomplete="email" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Mot de passe <span style="color:#475569">(min. 6 caractères)</span></label>
+        <input class="form-input" type="password" id="reg-password" placeholder="••••••••" required minlength="6" autocomplete="new-password" />
+      </div>
+      <button class="btn btn-primary btn-full" type="submit" id="register-btn">Créer un compte</button>
+    </form>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════ APP SHELL ═══ -->
+<div id="app-shell" style="display:none;flex-direction:column;min-height:100vh">
+
+  <!-- Navbar -->
+  <nav class="navbar">
+    <div class="nav-logo">
+      <svg viewBox="0 0 32 32" fill="none" style="width:1.5rem;height:1.5rem">
+        <rect width="32" height="32" rx="6" fill="url(#nlg)"/>
+        <path d="M8 22L12 14L16 18L20 10L24 16" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+        <defs><linearGradient id="nlg" x1="0" y1="0" x2="32" y2="32" gradientUnits="userSpaceOnUse"><stop stop-color="#2563eb"/><stop offset="1" stop-color="#7c3aed"/></linearGradient></defs>
+      </svg>
+      <span class="nav-logo-gradient">SmartGrades</span>
+    </div>
+    <div class="nav-links">
+      <button class="nav-link active" id="nav-dashboard" onclick="showView('dashboard')">
+        <span>Tableau de bord</span>
+      </button>
+      <button class="nav-link" id="nav-admin" onclick="showView('admin')">
+        <span>Élèves</span>
+      </button>
+    </div>
+    <div class="nav-right">
+      <div class="user-chip">
+        <div class="user-avatar" id="nav-avatar">?</div>
+        <span class="user-name" id="nav-username">...</span>
+      </div>
+      <button class="btn btn-sm btn-secondary" onclick="logout()">Déconnexion</button>
+    </div>
+  </nav>
+
+  <!-- Main -->
+  <main class="main-content">
+
+    <!-- ──────────────── DASHBOARD VIEW ──────────────────── -->
+    <div class="view active" id="view-dashboard">
+      <div class="hero">
+        <div class="hero-inner">
+          <h1 class="hero-title">Bonjour, <span class="hero-gradient" id="hero-name">...</span> 👋</h1>
+          <p class="hero-sub">Voici un aperçu des notes de vos élèves</p>
+        </div>
+      </div>
+      <div class="page">
+        <div class="stats-strip" id="overview-stats"></div>
+        <div id="overview-content"></div>
+      </div>
+    </div>
+
+    <!-- ──────────────── STUDENT DETAIL VIEW ─────────────── -->
+    <div class="view" id="view-student">
+      <div class="detail-hero">
+        <div class="detail-hero-inner">
+          <button class="back-btn" onclick="showView('dashboard')">
+            ← Retour au tableau de bord
+          </button>
+          <div class="detail-student-info" id="detail-student-info"></div>
+          <div class="detail-stats" id="detail-stats"></div>
+        </div>
+      </div>
+      <div class="page" style="padding-top:1.5rem">
+        <div id="student-detail-content"></div>
+      </div>
+    </div>
+
+    <!-- ──────────────── ADMIN VIEW ──────────────────────── -->
+    <div class="view" id="view-admin">
+      <div class="hero">
+        <div class="hero-inner">
+          <h1 class="hero-title">Gestion des <span class="hero-gradient">Élèves</span></h1>
+          <p class="hero-sub">Liez ou déliez des élèves à votre compte</p>
+        </div>
+      </div>
+      <div class="page">
+
+        <!-- Linked students -->
+        <div class="section" style="margin-bottom:1.5rem">
+          <div class="section-header">
+            <h3 class="section-title">
+              <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" style="color:#60a5fa"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+              Élèves liés
+            </h3>
+            <span style="font-size:.75rem;color:#94a3b8">🔄 Sync auto toutes les 2h</span>
+          </div>
+          <div id="linked-students-list">
+            <div class="loading"><div class="spinner"></div> Chargement…</div>
+          </div>
+        </div>
+
+        <!-- Add student -->
+        <div class="section">
+          <div class="section-header">
+            <h3 class="section-title">
+              <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" style="color:#4ade80"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/></svg>
+              Ajouter un élève
+            </h3>
+          </div>
+          <div class="section-body">
+            <div style="display:flex;gap:.75rem;flex-wrap:wrap">
+              <div class="search-box" style="flex:1;min-width:240px">
+                <svg class="search-icon" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                <input class="form-input" id="student-search-input" placeholder="Rechercher par nom, identifiant ou école…" oninput="debounceSearch()" />
+              </div>
+            </div>
+            <div id="student-search-results" style="margin-top:.75rem"></div>
+
+            <!-- Direct ID link -->
+            <div style="margin-top:1.5rem;padding-top:1.5rem;border-top:1px solid #1e293b">
+              <h4 style="margin-bottom:.75rem;font-size:.9rem;color:#94a3b8">Ou lier directement par ID</h4>
+              <form onsubmit="linkStudentById(event)" style="display:flex;gap:.75rem;flex-wrap:wrap">
+                <input class="form-input" id="direct-student-id" placeholder="ID de l'élève (ex: abc123)" style="flex:1;min-width:200px" />
+                <button class="btn btn-primary" type="submit">Lier cet élève</button>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- Toast -->
+<div id="toast"></div>
+
+<script>
+// ═══════════════════════════════════════════════════════ STATE ═══════════
+const API = '';   // same origin
+let token = localStorage.getItem('sg_token') || null;
+let currentUser = JSON.parse(localStorage.getItem('sg_user') || 'null');
+let currentStudentId = null;
+let searchTimeout = null;
+let linkedStudents = [];
+
+// ════════════════════════════════════════════════════ UTILITIES ══════════
+
+function gradeColor(v) {
+  if (v == null) return 'grade-red';
+  if (v >= 75) return 'grade-green';
+  if (v >= 60) return 'grade-yellow';
+  if (v >= 50) return 'grade-orange';
+  return 'grade-red';
+}
+function gradeColorHex(v) {
+  if (v == null) return '#f87171';
+  if (v >= 75) return '#4ade80';
+  if (v >= 60) return '#facc15';
+  if (v >= 50) return '#fb923c';
+  return '#f87171';
+}
+function gradeBg(v) {
+  if (v == null) return 'bg-grade-red';
+  if (v >= 75) return 'bg-grade-green';
+  if (v >= 60) return 'bg-grade-yellow';
+  if (v >= 50) return 'bg-grade-orange';
+  return 'bg-grade-red';
+}
+function gradeFill(v) {
+  if (v == null) return 'fill-red';
+  if (v >= 75) return 'fill-green';
+  if (v >= 60) return 'fill-yellow';
+  if (v >= 50) return 'fill-orange';
+  return 'fill-red';
+}
+function initials(name) {
+  if (!name) return '?';
+  return name.split(' ').slice(0,2).map(w=>w[0]).join('').toUpperCase();
+}
+function fmt(v, digits=1) {
+  if (v == null || isNaN(v)) return '–';
+  return parseFloat(v).toFixed(digits);
+}
+
+async function apiFetch(path, opts={}) {
+  const headers = { 'Content-Type': 'application/json', ...(opts.headers||{}) };
+  if (token) headers['Authorization'] = 'Bearer ' + token;
+  const res = await fetch(API + path, { ...opts, headers });
+  const data = await res.json().catch(()=>({ error: 'Erreur réseau' }));
+  if (!res.ok) throw new Error(data.error || 'Erreur serveur');
+  return data;
+}
+
+function showToast(msg, type='') {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = 'show' + (type ? ' toast-'+type : '');
+  clearTimeout(el._t);
+  el._t = setTimeout(()=>{ el.className = ''; }, 3500);
+}
+
+function setAuthAlert(msg, type='error') {
+  const el = document.getElementById('auth-alert');
+  if (!msg) { el.innerHTML=''; return; }
+  el.innerHTML = `<div class="alert alert-${type}">${msg}</div>`;
+}
+
+// ════════════════════════════════════════════════════════ AUTH ═══════════
+
+function switchAuthTab(tab) {
+  document.querySelectorAll('.auth-tab').forEach((b,i)=>b.classList.toggle('active', (i===0&&tab==='login')||(i===1&&tab==='register')));
+  document.getElementById('login-form').style.display = tab==='login' ? 'block' : 'none';
+  document.getElementById('register-form').style.display = tab==='register' ? 'block' : 'none';
+  setAuthAlert('');
+}
+
+async function handleLogin(e) {
+  e.preventDefault();
+  const btn = document.getElementById('login-btn');
+  btn.disabled = true; btn.textContent = 'Connexion…';
+  setAuthAlert('');
+  try {
+    const data = await apiFetch('/api/login', {
+      method:'POST',
+      body: JSON.stringify({
+        email: document.getElementById('login-email').value,
+        password: document.getElementById('login-password').value,
+      })
+    });
+    onAuthSuccess(data);
+  } catch(err) {
+    setAuthAlert(err.message);
+  } finally {
+    btn.disabled = false; btn.textContent = 'Se connecter';
+  }
+}
+
+async function handleRegister(e) {
+  e.preventDefault();
+  const btn = document.getElementById('register-btn');
+  btn.disabled = true; btn.textContent = 'Création…';
+  setAuthAlert('');
+  try {
+    const data = await apiFetch('/api/register', {
+      method:'POST',
+      body: JSON.stringify({
+        email: document.getElementById('reg-email').value,
+        password: document.getElementById('reg-password').value,
+        name: document.getElementById('reg-name').value,
+      })
+    });
+    onAuthSuccess(data);
+  } catch(err) {
+    setAuthAlert(err.message);
+  } finally {
+    btn.disabled = false; btn.textContent = 'Créer un compte';
+  }
+}
+
+function onAuthSuccess({ token: t, user }) {
+  token = t;
+  currentUser = user;
+  localStorage.setItem('sg_token', t);
+  localStorage.setItem('sg_user', JSON.stringify(user));
+  initApp();
+}
+
+function logout() {
+  token = null; currentUser = null;
+  localStorage.removeItem('sg_token');
+  localStorage.removeItem('sg_user');
+  document.getElementById('app-shell').style.display = 'none';
+  document.getElementById('auth-screen').style.display = 'flex';
+  document.getElementById('login-email').value='';
+  document.getElementById('login-password').value='';
+  setAuthAlert('');
+  switchAuthTab('login');
+}
+
+// ══════════════════════════════════════════════════════ APP INIT ══════════
+
+function initApp() {
+  document.getElementById('auth-screen').style.display = 'none';
+  document.getElementById('app-shell').style.display = 'flex';
+
+  const name = currentUser?.display_name || currentUser?.email || 'Utilisateur';
+  document.getElementById('hero-name').textContent = name.split(' ')[0];
+  document.getElementById('nav-username').textContent = name;
+  document.getElementById('nav-avatar').textContent = initials(name);
+
+  showView('dashboard');
+}
+
+// ════════════════════════════════════════════════════════ VIEWS ═══════════
+
+function showView(view) {
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  document.querySelectorAll('.nav-link').forEach(b=>b.classList.remove('active'));
+
+  document.getElementById('view-'+view)?.classList.add('active');
+  document.getElementById('nav-'+view)?.classList.add('active');
+
+  if (view === 'dashboard') loadDashboard();
+  if (view === 'admin')     loadAdmin();
+}
+
+function showStudentDetail(studentId) {
+  currentStudentId = studentId;
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  document.getElementById('view-student').classList.add('active');
+  document.querySelectorAll('.nav-link').forEach(b=>b.classList.remove('active'));
+  loadStudentDetail(studentId);
+}
+
+// ══════════════════════════════════════════════════════ DASHBOARD ══════════
+
+async function loadDashboard() {
+  document.getElementById('overview-stats').innerHTML = '<div class="loading" style="grid-column:1/-1"><div class="spinner"></div></div>';
+  document.getElementById('overview-content').innerHTML = '';
+  try {
+    const data = await apiFetch('/api/overview');
+    renderDashboard(data);
+  } catch(err) {
+    document.getElementById('overview-content').innerHTML =
+      `<div class="section"><div class="section-body"><div class="empty-state"><div class="empty-icon">⚠️</div><div class="empty-title">Erreur de chargement</div><div class="empty-desc">${err.message}</div></div></div></div>`;
+    document.getElementById('overview-stats').innerHTML = '';
+  }
+}
+
+function renderDashboard(students) {
+  // Stats strip
+  const totalStudents = students.length;
+  const totalGrades = students.reduce((s,st)=>s+parseInt(st.total_grades||0),0);
+  const avgs = students.filter(s=>s.average!=null).map(s=>parseFloat(s.average));
+  const globalAvg = avgs.length ? avgs.reduce((a,b)=>a+b,0)/avgs.length : null;
+  const totalCourses = students.reduce((s,st)=>s+parseInt(st.total_courses||0),0);
+
+  document.getElementById('overview-stats').innerHTML = `
+    <div class="stat-card">
+      <div class="stat-label">Élèves suivis</div>
+      <div class="stat-value" style="color:#60a5fa">${totalStudents}</div>
+      <div class="stat-sub">liés à votre compte</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Moyenne globale</div>
+      <div class="stat-value ${gradeColor(globalAvg)}">${fmt(globalAvg)}%</div>
+      <div class="stat-sub">tous élèves confondus</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Notes totales</div>
+      <div class="stat-value" style="color:#a78bfa">${totalGrades}</div>
+      <div class="stat-sub">notes enregistrées</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Matières</div>
+      <div class="stat-value" style="color:#34d399">${totalCourses}</div>
+      <div class="stat-sub">matières évaluées</div>
+    </div>
+  `;
+
+  if (students.length === 0) {
+    document.getElementById('overview-content').innerHTML = `
+      <div class="empty-state">
+        <div class="empty-icon">🎓</div>
+        <div class="empty-title">Aucun élève lié</div>
+        <div class="empty-desc">Allez dans la section <strong>Élèves</strong> pour lier des élèves à votre compte.</div>
+        <br/>
+        <button class="btn btn-primary" onclick="showView('admin')">Gérer les élèves</button>
+      </div>
+    `;
+    return;
+  }
+
+  // Student cards grid
+  const grid = document.createElement('div');
+  grid.className = 'students-grid';
+
+  students.forEach(student => {
+    const avg = student.average ? parseFloat(student.average) : null;
+    const courses = (student.courses || []).slice(0,4);
+    const maxAvg = Math.max(...courses.map(c=>parseFloat(c.average)||0), 1);
+
+    const card = document.createElement('div');
+    card.className = 'student-card';
+    card.onclick = () => showStudentDetail(student.id);
+
+    const miniBars = courses.length > 0 ? courses.map(c => {
+      const cv = parseFloat(c.average)||0;
+      const pct = Math.round((cv/100)*100);
+      return `
+        <div class="mini-bar-item">
+          <div class="mini-bar-course" title="${c.course}">${c.course}</div>
+          <div class="mini-bar-track"><div class="mini-bar-fill ${gradeFill(cv)}" style="width:${pct}%"></div></div>
+          <div class="mini-bar-val ${gradeColor(cv)}">${fmt(cv)}%</div>
+        </div>
+      `;
+    }).join('') : '<div class="no-data">Aucune note enregistrée</div>';
+
+    card.innerHTML = `
+      <div class="student-card-header">
+        <div class="student-avatar">${initials(student.name)}</div>
+        <div class="student-meta">
+          <div class="student-name">${student.name}</div>
+          <div class="student-school">${student.school || 'École non renseignée'}</div>
+        </div>
+        <div class="student-avg-badge ${gradeBg(avg)} grade-chip">
+          <div class="student-avg-value ${gradeColor(avg)}">${avg != null ? fmt(avg,0)+'%' : '–'}</div>
+          <div style="font-size:.625rem;color:#64748b;margin-top:.125rem">moy.</div>
+        </div>
+      </div>
+      <div class="student-card-body">
+        <div class="mini-bar-list">${miniBars}</div>
+      </div>
+      <div class="student-card-footer">
+        <span class="grade-count">${student.total_grades} note${student.total_grades!=1?'s':''} · ${student.total_courses} matière${student.total_courses!=1?'s':''}</span>
+        <span style="color:#3b82f6;font-size:.8125rem;font-weight:600">Voir détail →</span>
+      </div>
+    `;
+    grid.appendChild(card);
+  });
+
+  document.getElementById('overview-content').appendChild(grid);
+
+  // Chart section for each student
+  students.forEach(student => {
+    if (!student.courses || student.courses.length === 0) return;
+    const section = document.createElement('div');
+    section.className = 'section';
+    section.innerHTML = `
+      <div class="section-header">
+        <h3 class="section-title">
+          <div class="linked-avatar" style="font-size:.75rem">${initials(student.name)}</div>
+          ${student.name} — Moyennes par matière
+        </h3>
+        <button class="btn btn-sm btn-secondary" onclick="showStudentDetail('${student.id}')">Voir tout →</button>
+      </div>
+      <div class="section-body">
+        <div class="bar-chart">${renderBarChart(student.courses)}</div>
+      </div>
+    `;
+    document.getElementById('overview-content').appendChild(section);
+  });
+}
+
+function renderBarChart(courses) {
+  if (!courses || courses.length === 0) return '<div class="no-data">Aucune donnée</div>';
+  return courses.map(c => {
+    const v = parseFloat(c.average) || 0;
+    const pct = Math.min(v, 100);
+    const col = gradeColorHex(v);
+    return `
+      <div class="bar-item">
+        <div class="bar-label" title="${c.course}">${c.course}</div>
+        <div class="bar-track">
+          <div class="bar-fill" style="width:${pct}%;background:${col}">${fmt(v,0)}%</div>
+        </div>
+        <div class="bar-value ${gradeColor(v)}">${fmt(v)}%</div>
+      </div>
+    `;
+  }).join('');
+}
+
+// ═══════════════════════════════════════════════ STUDENT DETAIL ═══════════
+
+async function loadStudentDetail(studentId) {
+  document.getElementById('detail-student-info').innerHTML = '<div class="loading"><div class="spinner"></div></div>';
+  document.getElementById('detail-stats').innerHTML = '';
+  document.getElementById('student-detail-content').innerHTML = '<div class="loading"><div class="spinner"></div> Chargement des notes…</div>';
+
+  try {
+    // Find student in linked list
+    let student = linkedStudents.find(s=>s.id===studentId);
+    if (!student) {
+      const all = await apiFetch('/api/students');
+      linkedStudents = all;
+      student = all.find(s=>s.id===studentId) || { id:studentId, name:'Élève', school:'' };
+    }
+
+    const [summary, grades] = await Promise.all([
+      apiFetch('/api/grades/'+studentId+'/summary'),
+      apiFetch('/api/grades/'+studentId),
+    ]);
+
+    renderStudentHeader(student, summary);
+    renderStudentDetail(student, summary, grades);
+  } catch(err) {
+    document.getElementById('detail-student-info').innerHTML = `<div class="alert alert-error">${err.message}</div>`;
+    document.getElementById('student-detail-content').innerHTML = '';
+  }
+}
+
+function renderStudentHeader(student, summary) {
+  const avg = summary?.overall?.average ? parseFloat(summary.overall.average) : null;
+  const count = summary?.overall?.count || 0;
+  const courses = summary?.by_course?.length || 0;
+  const periods = summary?.periods?.length || 0;
+
+  document.getElementById('detail-student-info').innerHTML = `
+    <div class="detail-avatar">${initials(student.name)}</div>
+    <div class="detail-meta">
+      <div class="detail-name">${student.name}</div>
+      <div class="detail-school">${student.school||'École non renseignée'} ${student.username?'· @'+student.username:''}</div>
+    </div>
+  `;
+
+  document.getElementById('detail-stats').innerHTML = `
+    <div class="detail-stat">
+      <div class="detail-stat-val ${gradeColor(avg)}">${avg!=null?fmt(avg)+'%':'–'}</div>
+      <div class="detail-stat-label">Moyenne</div>
+    </div>
+    <div class="detail-stat">
+      <div class="detail-stat-val" style="color:#a78bfa">${count}</div>
+      <div class="detail-stat-label">Notes</div>
+    </div>
+    <div class="detail-stat">
+      <div class="detail-stat-val" style="color:#60a5fa">${courses}</div>
+      <div class="detail-stat-label">Matières</div>
+    </div>
+    <div class="detail-stat">
+      <div class="detail-stat-val" style="color:#34d399">${periods}</div>
+      <div class="detail-stat-label">Périodes</div>
+    </div>
+  `;
+}
+
+function renderStudentDetail(student, summary, grades) {
+  const container = document.getElementById('student-detail-content');
+  container.innerHTML = '';
+
+  // Bar chart section
+  if (summary.by_course && summary.by_course.length > 0) {
+    const chartSection = document.createElement('div');
+    chartSection.className = 'section';
+    chartSection.innerHTML = `
+      <div class="section-header"><h3 class="section-title">📊 Moyennes par matière</h3></div>
+      <div class="section-body"><div class="bar-chart">${renderBarChart(summary.by_course)}</div></div>
+    `;
+    container.appendChild(chartSection);
+  }
+
+  // By-period tabs
+  const gradeSection = document.createElement('div');
+  gradeSection.className = 'section';
+  gradeSection.id = 'grades-section';
+
+  const periods = summary.periods || [];
+  const courses = summary.courses || [];
+
+  // Build tab bar
+  const tabs = ['Toutes', ...periods].map((p,i) => `<button class="tab-btn${i===0?' active':''}" onclick="filterGrades(this,'${p}')">${p==='Toutes'?'Toutes les notes':p}</button>`).join('');
+
+  gradeSection.innerHTML = `
+    <div class="section-header">
+      <h3 class="section-title">📋 Notes détaillées</h3>
+    </div>
+    <div class="tab-bar" id="period-tabs">${tabs}</div>
+    <div class="filters-bar">
+      <input class="filter-input filter-search" id="grade-search" placeholder="🔍 Rechercher…" oninput="applyGradeFilters()" />
+      <select class="filter-input filter-select" id="grade-course-filter" onchange="applyGradeFilters()">
+        <option value="">Toutes les matières</option>
+        ${courses.map(c=>`<option value="${c}">${c}</option>`).join('')}
+      </select>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr>
+          <th>Matière</th>
+          <th>Évaluation</th>
+          <th>Enseignant</th>
+          <th>Date</th>
+          <th>Période</th>
+          <th>Note</th>
+          <th>Type</th>
+        </tr></thead>
+        <tbody id="grades-tbody"></tbody>
+      </table>
+    </div>
+  `;
+
+  container.appendChild(gradeSection);
+
+  // Store grades globally for filtering
+  window._currentGrades = grades;
+  window._currentPeriodFilter = '';
+  applyGradeFilters();
+}
+
+function filterGrades(btn, period) {
+  document.querySelectorAll('#period-tabs .tab-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  window._currentPeriodFilter = period === 'Toutes' ? '' : period;
+  applyGradeFilters();
+}
+
+function applyGradeFilters() {
+  const search = (document.getElementById('grade-search')?.value||'').toLowerCase();
+  const course = document.getElementById('grade-course-filter')?.value||'';
+  const period = window._currentPeriodFilter||'';
+  const grades = window._currentGrades||[];
+
+  const filtered = grades.filter(g => {
+    if (period && g.period !== period) return false;
+    if (course && g.course !== course) return false;
+    if (search) {
+      const hay = [g.eval_name,g.course,g.teacher,g.period].join(' ').toLowerCase();
+      if (!hay.includes(search)) return false;
+    }
+    return true;
+  });
+
+  const tbody = document.getElementById('grades-tbody');
+  if (!tbody) return;
+
+  if (filtered.length === 0) {
+    tbody.innerHTML = '<tr class="empty-row"><td colspan="7">Aucune note correspondante</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = filtered.map(g => {
+    const v = g.grade_value != null ? parseFloat(g.grade_value) : null;
+    const display = g.grade_display || (v!=null ? fmt(v)+'%' : '–');
+    const doesCount = g.does_count;
+    const colorClass = gradeColor(v);
+    const date = g.eval_date ? g.eval_date.substring(0,10) : '–';
+    return `<tr${doesCount===false?' class="td-no-count"':''}>
+      <td class="td-course">${g.course||'–'}</td>
+      <td class="td-eval" title="${g.eval_name||''}">${g.eval_name||'–'}</td>
+      <td style="color:#64748b">${g.teacher||'–'}</td>
+      <td style="color:#64748b">${date}</td>
+      <td><span class="period-pill">${g.period||'–'}</span></td>
+      <td class="td-grade ${colorClass}"><span class="grade-chip ${gradeBg(v)}">${display}</span></td>
+      <td style="color:#64748b;font-size:.75rem">${g.grade_type||'–'}</td>
+    </tr>`;
+  }).join('');
+}
+
+// ════════════════════════════════════════════════════════ ADMIN ═══════════
+
+async function loadAdmin() {
+  await loadLinkedStudents();
+}
+
+async function loadLinkedStudents() {
+  const container = document.getElementById('linked-students-list');
+  container.innerHTML = '<div class="loading"><div class="spinner"></div> Chargement…</div>';
+  try {
+    const students = await apiFetch('/api/students');
+    linkedStudents = students;
+    renderLinkedStudents(students);
+  } catch(err) {
+    container.innerHTML = `<div class="alert alert-error" style="margin:1rem">${err.message}</div>`;
+  }
+}
+
+function renderLinkedStudents(students) {
+  const container = document.getElementById('linked-students-list');
+  if (students.length === 0) {
+    container.innerHTML = `
+      <div class="empty-state" style="padding:2.5rem">
+        <div class="empty-icon">👤</div>
+        <div class="empty-title">Aucun élève lié</div>
+        <div class="empty-desc">Utilisez le formulaire ci-dessous pour ajouter un élève.</div>
+      </div>
+    `;
+    return;
+  }
+  container.innerHTML = students.map(s => `
+    <div class="linked-student-row">
+      <div class="linked-info">
+        <div class="linked-avatar">${initials(s.name)}</div>
+        <div>
+          <div class="linked-name">${s.name}</div>
+          <div class="linked-school">${s.school||'École non renseignée'}${s.username?' · @'+s.username:''}</div>
+        </div>
+      </div>
+      <div class="linked-actions">
+        <button class="btn btn-sm btn-secondary" onclick="showStudentDetail('${s.id}')">Voir notes</button>
+        <span style="font-size:.7rem;color:#475569">Sync auto</span>
+        <button class="btn btn-sm btn-danger" onclick="unlinkStudent('${s.id}','${s.name.replace(/'/g,"\\'")}')">Délier</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+async function unlinkStudent(id, name) {
+  if (!confirm(`Délier l'élève "${name}" de votre compte ?`)) return;
+  try {
+    await apiFetch('/api/students/'+id, { method:'DELETE' });
+    showToast(`"${name}" délié avec succès`, 'success');
+    await loadLinkedStudents();
+  } catch(err) {
+    showToast(err.message, 'error');
+  }
+}
+
+async function fetchStudentGrades(id, name) { showToast("Les notes sont synchronisées automatiquement toutes les 2h", "info"); }
+  showToast(`Récupération des notes de ${name}...`, 'info');
+  try {
+    const result = await apiFetch('/api/students/'+id+'/fetch', { method:'POST' });
+    showToast(`${result.count || 0} notes récupérées pour ${name} !`, 'success');
+    await loadLinkedStudents();
+  } catch(err) {
+    showToast('Erreur: ' + err.message, 'error');
+  }
+}
+
+async function fetchAllGrades() { showToast("Les notes sont synchronisées automatiquement toutes les 2h", "info"); }
+  showToast('Synchronisation de tous les élèves...', 'info');
+  try {
+    const result = await apiFetch('/api/fetch-all', { method:'POST' });
+    const summary = result.results.map(r => `${r.student}: ${r.grades || r.error}`).join(', ');
+    showToast('Terminé ! ' + summary, 'success');
+    await loadLinkedStudents();
+  } catch(err) {
+    showToast('Erreur: ' + err.message, 'error');
+  }
+}
+
+// Search students to link
+function debounceSearch() {
+  clearTimeout(searchTimeout);
+  searchTimeout = setTimeout(searchStudents, 350);
+}
+
+async function searchStudents() {
+  const q = document.getElementById('student-search-input').value.trim();
+  const results = document.getElementById('student-search-results');
+  if (q.length < 2) { results.innerHTML=''; return; }
+
+  results.innerHTML = '<div class="loading" style="padding:1rem"><div class="spinner"></div></div>';
+  try {
+    const data = await apiFetch('/api/students/search?q='+encodeURIComponent(q));
+    if (data.length === 0) {
+      results.innerHTML = '<div class="no-data" style="padding:1rem">Aucun élève trouvé</div>';
+      return;
+    }
+    results.innerHTML = `<div class="search-results">${data.map(s => `
+      <div class="search-result-item">
+        <div class="search-result-info">
+          <div class="search-result-name">${s.name}</div>
+          <div class="search-result-sub">${s.school||'–'} ${s.username?'· @'+s.username:''} · ID: ${s.id}</div>
+        </div>
+        <button class="btn btn-sm btn-primary" onclick="linkStudent('${s.id}','${s.name.replace(/'/g,"\\'")}')">Lier</button>
+      </div>
+    `).join('')}</div>`;
+  } catch(err) {
+    results.innerHTML = `<div class="alert alert-error">${err.message}</div>`;
+  }
+}
+
+async function linkStudent(id, name) {
+  try {
+    await apiFetch('/api/students', { method:'POST', body: JSON.stringify({ student_id: id }) });
+    showToast(`"${name}" lié avec succès`, 'success');
+    document.getElementById('student-search-input').value = '';
+    document.getElementById('student-search-results').innerHTML = '';
+    await loadLinkedStudents();
+  } catch(err) {
+    showToast(err.message, 'error');
+  }
+}
+
+async function linkStudentById(e) {
+  e.preventDefault();
+  const id = document.getElementById('direct-student-id').value.trim();
+  if (!id) return;
+  try {
+    const res = await apiFetch('/api/students', { method:'POST', body: JSON.stringify({ student_id: id }) });
+    showToast(`Élève lié avec succès`, 'success');
+    document.getElementById('direct-student-id').value = '';
+    await loadLinkedStudents();
+  } catch(err) {
+    showToast(err.message, 'error');
+  }
+}
+
+// ══════════════════════════════════════════════════════ BOOT ══════════════
+
+(function boot() {
+  if (token && currentUser) {
+    initApp();
+  } else {
+    document.getElementById('auth-screen').style.display = 'flex';
+  }
+})();
+</script>
+</body>
+</html>
