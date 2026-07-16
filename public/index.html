@@ -1223,6 +1223,45 @@ function filterGrades(btn, period) {
   btn.classList.add('active');
   window._currentPeriodFilter = period === 'Toutes' ? '' : period;
   applyGradeFilters();
+  updateAverages();
+}
+
+function avgColor(a) { if (a == null) return ''; if (a >= 75) return 'c-green'; if (a >= 60) return 'c-yellow'; if (a >= 50) return 'c-orange'; return 'c-red'; }
+
+function updateAverages() {
+  const period = window._currentPeriodFilter || '';
+  const grades = window._currentGrades || [];
+  const filtered = period ? grades.filter(g => g.period === period && g.does_count && g.grade_value != null) : grades.filter(g => g.does_count && g.grade_value != null);
+
+  // General average
+  const vals = filtered.map(g => g.grade_value);
+  const avg = vals.length ? Math.round(vals.reduce((a,b) => a+b, 0) / vals.length * 10) / 10 : null;
+  const statVals = document.querySelectorAll('#detail-stats .detail-stat-val');
+  if (statVals.length >= 1) {
+    statVals[0].textContent = avg != null ? fmt(avg) + '%' : '–';
+    statVals[0].className = 'detail-stat-val ' + gradeColor(avg);
+  }
+
+  // By-course averages
+  const courseMap = {};
+  filtered.forEach(g => { (courseMap[g.course] = courseMap[g.course] || []).push(g.grade_value); });
+  const byCourse = Object.entries(courseMap).map(([course, vals]) => ({
+    course,
+    average: Math.round(vals.reduce((a,b) => a+b, 0) / vals.length * 10) / 10,
+    count: vals.length
+  })).sort((a,b) => b.average - a.average);
+
+  const chart = document.querySelector('.bar-chart');
+  if (chart) chart.innerHTML = renderBarChart(byCourse);
+
+  // Update note count
+  if (statVals.length >= 2) {
+    statVals[1].textContent = filtered.length;
+  }
+  // Update course count
+  if (statVals.length >= 3) {
+    statVals[2].textContent = byCourse.length;
+  }
 }
 
 function applyGradeFilters() {
