@@ -1308,28 +1308,9 @@ async function unlinkStudent(id, name) {
   }
 }
 
-async function fetchStudentGrades(id, name) { showToast("Les notes sont synchronisées automatiquement toutes les 2h", "info"); }
-  showToast(`Récupération des notes de ${name}...`, 'info');
-  try {
-    const result = await apiFetch('/api/students/'+id+'/fetch', { method:'POST' });
-    showToast(`${result.count || 0} notes récupérées pour ${name} !`, 'success');
-    await loadLinkedStudents();
-  } catch(err) {
-    showToast('Erreur: ' + err.message, 'error');
-  }
-}
+function fetchStudentGrades(id, name) { showToast("Les notes sont synchronisées automatiquement toutes les 2h", "info"); }
 
-async function fetchAllGrades() { showToast("Les notes sont synchronisées automatiquement toutes les 2h", "info"); }
-  showToast('Synchronisation de tous les élèves...', 'info');
-  try {
-    const result = await apiFetch('/api/fetch-all', { method:'POST' });
-    const summary = result.results.map(r => `${r.student}: ${r.grades || r.error}`).join(', ');
-    showToast('Terminé ! ' + summary, 'success');
-    await loadLinkedStudents();
-  } catch(err) {
-    showToast('Erreur: ' + err.message, 'error');
-  }
-}
+function fetchAllGrades() { showToast("Les notes sont synchronisées automatiquement toutes les 2h", "info"); }
 
 // Search students to link
 function debounceSearch() {
