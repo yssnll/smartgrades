@@ -597,8 +597,8 @@ tbody tr:last-child td{border-bottom:none}
     <!-- Login Form -->
     <form id="login-form" onsubmit="handleLogin(event)">
       <div class="form-group">
-        <label class="form-label">Adresse e-mail</label>
-        <input class="form-input" type="text" id="login-username" placeholder="vous@exemple.com" required autocomplete="email" />
+        <label class="form-label">Pseudo</label>
+        <input class="form-input" type="text" id="login-username" placeholder="Votre pseudo" required autocomplete="username" />
       </div>
       <div class="form-group">
         <label class="form-label">Mot de passe</label>
@@ -610,16 +610,12 @@ tbody tr:last-child td{border-bottom:none}
     <!-- Register Form -->
     <form id="register-form" style="display:none" onsubmit="handleRegister(event)">
       <div class="form-group">
-        <label class="form-label">Nom complet</label>
-        <input class="form-input" type="text" id="reg-name" placeholder="Votre nom" required autocomplete="name" />
+        <label class="form-label">Pseudo</label>
+        <input class="form-input" type="text" id="reg-username" placeholder="Choisis un pseudo" required autocomplete="username" />
       </div>
       <div class="form-group">
-        <label class="form-label">Adresse e-mail</label>
-        <input class="form-input" type="text" id="reg-username" placeholder="vous@exemple.com" required autocomplete="email" />
-      </div>
-      <div class="form-group">
-        <label class="form-label">Mot de passe <span style="color:#475569">(min. 6 caractères)</span></label>
-        <input class="form-input" type="password" id="reg-password" placeholder="••••••••" required minlength="6" autocomplete="new-password" />
+        <label class="form-label">Mot de passe</label>
+        <input class="form-input" type="password" id="reg-password" placeholder="••••••••" required minlength="4" autocomplete="new-password" />
       </div>
       <button class="btn btn-primary btn-full" type="submit" id="register-btn">Créer un compte</button>
     </form>
@@ -872,7 +868,6 @@ async function handleRegister(e) {
       body: JSON.stringify({
         username: document.getElementById('reg-username').value,
         password: document.getElementById('reg-password').value,
-        name: document.getElementById('reg-name').value,
       })
     });
     onAuthSuccess(data);
