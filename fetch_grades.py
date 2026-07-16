@@ -13,6 +13,30 @@ from bs4 import BeautifulSoup
 from datetime import datetime, timezone
 
 DATABASE_URL = os.environ.get('DATABASE_URL', '')
+
+# Monkey-patch: the smartschool library fails on French accented chars with backslashes
+# e.g. "L\'élève" produces invalid JSON after the library's basic substitution
+def _fixed_parse_login_information(self, response):
+    import re as _re, json as _json, contextlib as _cl
+    from bs4 import BeautifulSoup as _BS
+    html = _BS(response.text, 'html.parser')
+    for script in html.select('script'):
+        if script.get('src') or 'extend' not in script.text:
+            continue
+        m = _re.search(r"JSON\s*\.\s*parse\s*\(\s*'(.*)'\s*\)\s*\)\s*;?\s*$",
+                       script.text, flags=_re.IGNORECASE)
+        if m:
+            raw = m.group(1)
+            result = _re.sub(r"\\u([0-9a-fA-F]{4})",
+                             lambda x: chr(int(x.group(1), 16)), raw)
+            result = result.replace("\\\\", "\\")
+            # Fix lone backslashes that aren't valid JSON escapes
+            result = _re.sub(r'\\(?!["\\/bfnrtu])', r'\\\\', result)
+            with _cl.suppress(Exception):
+                data = _json.loads(result)
+                with _cl.suppress(KeyError, TypeError, IndexError):
+                    self.authenticated_user = data["vars"]["authenticatedUser"]
+                    return
 if not DATABASE_URL:
     print("ERROR: DATABASE_URL not set")
     sys.exit(1)
@@ -72,7 +96,10 @@ def check_connection(school, username, password, dob):
             if form2:
                 data2 = {inp['name']: inp.get('value', '')
                          for inp in form2.select('input[name]')}
-                data2['security_question_answer'] = dob
+                # Find DOB field dynamically (e.g. account_verification_form[_security_question_answer])
+                for inp in form2.select('input[name]'):
+                    if '_security_question_answer' in inp['name']:
+                        data2[inp['name']] = dob
 
                 action2 = form2.get('action') or r2.url
                 if not action2.startswith('http'):
@@ -98,6 +125,9 @@ def check_connection(school, username, password, dob):
 
 
 def fetch_grades(school, username, password, dob):
+    # Apply the parse fix before using the library
+    import smartschool._session as _ss
+    _ss.Smartschool._parse_login_information = _fixed_parse_login_information
     """Fetch all grades via the smartschool library. Returns list of grade dicts."""
     from smartschool import Smartschool, AppCredentials
     from smartschool._results import Results
@@ -134,8 +164,11 @@ def fetch_grades(school, username, password, dob):
 
         course = result.courses[0].name if result.courses else 'Inconnu'
         owner = result.gradebook_owner
-        teacher = (f"{owner.first_name} {owner.last_name}".strip()
-                   if owner else '')
+        if owner:
+            teacher = str(owner.name.starting_with_first_name or
+                          owner.name.starting_with_last_name or '')
+        else:
+            teacher = ''
         period = result.period.name if result.period else ''
         eval_date = (result.date.strftime('%Y-%m-%d')
                      if result.date else '')
