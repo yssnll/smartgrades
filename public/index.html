@@ -1046,9 +1046,16 @@ function renderDashboard(students) {
       `;
     }).join('') : '<div class="no-data">Aucune note enregistrée</div>';
 
+    const hasConnError = student.conn_status === 'error';
+    const connWarning = hasConnError
+      ? `<div style="background:#7f1d1d;border:1px solid #ef4444;border-radius:.375rem;padding:.5rem .75rem;margin:.75rem 1.25rem 0;font-size:.75rem;color:#fca5a5;display:flex;align-items:center;gap:.5rem">
+           <span>⚠️</span><span>${student.conn_error || 'Erreur de connexion SmartSchool'}</span>
+         </div>`
+      : '';
+
     card.innerHTML = `
       <div class="student-card-header">
-        <div class="student-avatar">${initials(student.name)}</div>
+        <div class="student-avatar" style="${hasConnError?'background:#7f1d1d;color:#fca5a5':''}">${initials(student.name)}</div>
         <div class="student-meta">
           <div class="student-name">${student.name}</div>
           <div class="student-school">${student.school || 'École non renseignée'}</div>
@@ -1058,6 +1065,7 @@ function renderDashboard(students) {
           <div style="font-size:.625rem;color:#64748b;margin-top:.125rem">moy.</div>
         </div>
       </div>
+      ${connWarning}
       <div class="student-card-body">
         <div class="mini-bar-list">${miniBars}</div>
       </div>
@@ -1145,8 +1153,16 @@ function renderStudentHeader(student, summary) {
   const courses = summary?.by_course?.length || 0;
   const periods = summary?.periods?.length || 0;
 
+  const connErrBanner = student.conn_status === 'error'
+    ? `<div style="grid-column:1/-1;background:#7f1d1d;border:1px solid #ef4444;border-radius:.5rem;padding:.75rem 1rem;font-size:.8125rem;color:#fca5a5;display:flex;align-items:center;gap:.625rem;margin-bottom:.5rem">
+         <span style="font-size:1.1rem">⚠️</span>
+         <span>${student.conn_error || 'Erreur de connexion SmartSchool — les notes affichées peuvent être obsolètes.'}</span>
+       </div>`
+    : '';
+
   document.getElementById('detail-student-info').innerHTML = `
-    <div class="detail-avatar">${initials(student.name)}</div>
+    ${connErrBanner}
+    <div class="detail-avatar" style="${student.conn_status==='error'?'background:#7f1d1d;color:#fca5a5':''}">${initials(student.name)}</div>
     <div class="detail-meta">
       <div class="detail-name">${student.name}</div>
       <div class="detail-school">${student.school||'École non renseignée'} ${student.username?'· @'+student.username:''}</div>
@@ -1542,3 +1558,4 @@ async function linkStudentByCredentials(e) {
 </script>
 </body>
 </html>
+
