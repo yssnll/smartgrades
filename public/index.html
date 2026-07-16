@@ -713,8 +713,8 @@ tbody tr:last-child td{border-bottom:none}
           </div>
         </div>
 
-        <!-- Add student -->
-        <div class="section">
+        <!-- Add student (admin only) -->
+        <div class="section" id="admin-link-section" style="display:none">
           <div class="section-header">
             <h3 class="section-title">
               <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" style="color:#4ade80"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/></svg>
@@ -729,15 +729,6 @@ tbody tr:last-child td{border-bottom:none}
               </div>
             </div>
             <div id="student-search-results" style="margin-top:.75rem"></div>
-
-            <!-- Direct ID link -->
-            <div style="margin-top:1.5rem;padding-top:1.5rem;border-top:1px solid #1e293b">
-              <h4 style="margin-bottom:.75rem;font-size:.9rem;color:#94a3b8">Ou lier directement par ID</h4>
-              <form onsubmit="linkStudentById(event)" style="display:flex;gap:.75rem;flex-wrap:wrap">
-                <input class="form-input" id="direct-student-id" placeholder="ID de l'élève (ex: abc123)" style="flex:1;min-width:200px" />
-                <button class="btn btn-primary" type="submit">Lier cet élève</button>
-              </form>
-            </div>
           </div>
         </div>
       </div>
@@ -902,6 +893,13 @@ function initApp() {
   document.getElementById('hero-name').textContent = name.split(' ')[0];
   document.getElementById('nav-username').textContent = name;
   document.getElementById('nav-avatar').textContent = initials(name);
+
+  // Admin-only features
+  const isAdmin = currentUser?.role === 'admin';
+  const linkSection = document.getElementById('admin-link-section');
+  if (linkSection) linkSection.style.display = isAdmin ? 'block' : 'none';
+  const navAdmin = document.getElementById('nav-admin');
+  if (navAdmin) navAdmin.style.display = isAdmin ? 'flex' : 'none';
 
   showView('dashboard');
 }
@@ -1253,6 +1251,13 @@ function applyGradeFilters() {
 
 async function loadAdmin() {
   await loadLinkedStudents();
+  // Show all available students by default (admin only)
+  if (currentUser?.role === 'admin') {
+    try {
+      const all = await apiFetch('/api/students/search?q=');
+      if (all.length) renderSearchResults(all);
+    } catch(e) {}
+  }
 }
 
 async function loadLinkedStudents() {
@@ -1290,8 +1295,7 @@ function renderLinkedStudents(students) {
       </div>
       <div class="linked-actions">
         <button class="btn btn-sm btn-secondary" onclick="showStudentDetail('${s.id}')">Voir notes</button>
-        <span style="font-size:.7rem;color:#475569">Sync auto</span>
-        <button class="btn btn-sm btn-danger" onclick="unlinkStudent('${s.id}','${s.name.replace(/'/g,"\\'")}')">Délier</button>
+        ${currentUser?.role === 'admin' ? `<button class="btn btn-sm btn-danger" onclick="unlinkStudent('${s.id}','${s.name.replace(/'/g,"\\'")}')">Délier</button>` : ''}
       </div>
     </div>
   `).join('');
@@ -1318,10 +1322,24 @@ function debounceSearch() {
   searchTimeout = setTimeout(searchStudents, 350);
 }
 
+function renderSearchResults(data) {
+  const results = document.getElementById('student-search-results');
+  if (!data.length) { results.innerHTML = '<div class="no-data" style="padding:1rem">Aucun élève trouvé</div>'; return; }
+  results.innerHTML = `<div class="search-results">${data.map(s => `
+    <div class="search-result-item">
+      <div class="search-result-info">
+        <div class="search-result-name">${s.name}</div>
+        <div class="search-result-sub">${s.school||'–'} ${s.username?'· @'+s.username:''}</div>
+      </div>
+      <button class="btn btn-sm btn-primary" onclick="linkStudent('${s.id}','${s.name.replace(/'/g,"\\'")}')">Lier</button>
+    </div>
+  `).join('')}</div>`;
+}
+
 async function searchStudents() {
   const q = document.getElementById('student-search-input').value.trim();
   const results = document.getElementById('student-search-results');
-  if (q.length < 2) { results.innerHTML=''; return; }
+  if (q.length < 1) { results.innerHTML=''; return; }
 
   results.innerHTML = '<div class="loading" style="padding:1rem"><div class="spinner"></div></div>';
   try {
