@@ -661,6 +661,10 @@ tbody tr:last-child td{border-bottom:none}
         <div class="hero-inner">
           <h1 class="hero-title">Bonjour, <span class="hero-gradient" id="hero-name">...</span> 👋</h1>
           <p class="hero-sub">Voici un aperçu des notes de vos élèves</p>
+          <div id="sync-status" style="margin-top:.75rem;display:flex;align-items:center;gap:.75rem;font-size:.8rem;color:#64748b">
+            <span id="sync-time">🔄 Sync automatique toutes les 5 min</span>
+            <button onclick="loadDashboard()" class="btn btn-sm btn-secondary" style="font-size:.75rem;padding:.25rem .6rem">Actualiser</button>
+          </div>
         </div>
       </div>
       <div class="page">
@@ -952,6 +956,18 @@ async function loadDashboard() {
   document.getElementById('overview-stats').innerHTML = '<div class="loading" style="grid-column:1/-1"><div class="spinner"></div></div>';
   document.getElementById('overview-content').innerHTML = '';
   try {
+    // Fetch sync status
+    apiFetch('/api/sync-status').then(status => {
+      if (status.synced && status.students?.length) {
+        const lastSync = status.students.reduce((max, s) => s.last_sync > max ? s.last_sync : max, '');
+        if (lastSync) {
+          const d = new Date(lastSync);
+          const timeStr = d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+          document.getElementById('sync-time').textContent = '🕐 Dernière sync: ' + timeStr + ' — prochain dans 5 min';
+        }
+      }
+    }).catch(() => {});
+
     const data = await apiFetch('/api/overview');
     renderDashboard(data);
   } catch(err) {
