@@ -532,12 +532,6 @@ app.get('/api/overview', requireAuth, async (req, res) => {
   }
 });
 
-// ─── Catch-all: serve SPA ─────────────────────────────────────────────────────
-
-app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
-});
-
 // ─── Link student by credentials ────────────────────────────────────────────
 
 app.post('/api/students/link-by-creds', requireAuth, async (req, res) => {
@@ -630,6 +624,12 @@ app.get('/api/sync-status', requireAuth, async (req, res) => {
   } catch (e) {
     res.status(500).json({ error: 'Server error' });
   }
+});
+
+// ─── Catch-all: serve SPA ─────────────────────────────────────────────────────
+
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
 // ─── Start ────────────────────────────────────────────────────────────────────
