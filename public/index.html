@@ -598,7 +598,7 @@ tbody tr:last-child td{border-bottom:none}
     <form id="login-form" onsubmit="handleLogin(event)">
       <div class="form-group">
         <label class="form-label">Adresse e-mail</label>
-        <input class="form-input" type="email" id="login-email" placeholder="vous@exemple.com" required autocomplete="email" />
+        <input class="form-input" type="text" id="login-username" placeholder="vous@exemple.com" required autocomplete="email" />
       </div>
       <div class="form-group">
         <label class="form-label">Mot de passe</label>
@@ -615,7 +615,7 @@ tbody tr:last-child td{border-bottom:none}
       </div>
       <div class="form-group">
         <label class="form-label">Adresse e-mail</label>
-        <input class="form-input" type="email" id="reg-email" placeholder="vous@exemple.com" required autocomplete="email" />
+        <input class="form-input" type="text" id="reg-username" placeholder="vous@exemple.com" required autocomplete="email" />
       </div>
       <div class="form-group">
         <label class="form-label">Mot de passe <span style="color:#475569">(min. 6 caractères)</span></label>
@@ -849,7 +849,7 @@ async function handleLogin(e) {
     const data = await apiFetch('/api/login', {
       method:'POST',
       body: JSON.stringify({
-        email: document.getElementById('login-email').value,
+        username: document.getElementById('login-username').value,
         password: document.getElementById('login-password').value,
       })
     });
@@ -870,7 +870,7 @@ async function handleRegister(e) {
     const data = await apiFetch('/api/register', {
       method:'POST',
       body: JSON.stringify({
-        email: document.getElementById('reg-email').value,
+        username: document.getElementById('reg-username').value,
         password: document.getElementById('reg-password').value,
         name: document.getElementById('reg-name').value,
       })
@@ -897,7 +897,7 @@ function logout() {
   localStorage.removeItem('sg_user');
   document.getElementById('app-shell').style.display = 'none';
   document.getElementById('auth-screen').style.display = 'flex';
-  document.getElementById('login-email').value='';
+  document.getElementById('login-username').value='';
   document.getElementById('login-password').value='';
   setAuthAlert('');
   switchAuthTab('login');
@@ -1320,7 +1320,7 @@ function renderLinkedStudents(students) {
       </div>
       <div class="linked-actions">
         <button class="btn btn-sm btn-secondary" onclick="showStudentDetail('${s.id}')">Voir notes</button>
-        ${currentUser?.role === 'admin' ? `<button class="btn btn-sm btn-danger" onclick="unlinkStudent('${s.id}','${s.name.replace(/'/g,"\\'")}')">Délier</button>` : ''}
+        <button class="btn btn-sm btn-danger" onclick="unlinkStudent('${s.id}','${s.name.replace(/'/g,"\\'")}')">Délier</button>
       </div>
     </div>
   `).join('');

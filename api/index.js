@@ -137,33 +137,33 @@ function signToken(user) {
  * Creates a new user and returns a JWT.
  */
 app.post('/api/register', async (req, res) => {
-  const { email, password, name } = req.body;
+  const { username, password, name } = req.body;
 
-  if (!email || !password || !name) {
-    return res.status(400).json({ error: 'email, password and name are required' });
+  if (!username || !password) {
+    return res.status(400).json({ error: 'username et password sont obligatoires' });
   }
 
-  if (password.length < 6) {
-    return res.status(400).json({ error: 'Password must be at least 6 characters' });
+  if (password.length < 4) {
+    return res.status(400).json({ error: 'Mot de passe trop court (min 4 caractères)' });
   }
 
   try {
-    // Check if email already exists
-    const existing = await pool.query('SELECT id FROM users WHERE email = $1', [email.toLowerCase()]);
+    const existing = await pool.query('SELECT id FROM users WHERE email = $1', [username.toLowerCase()]);
     if (existing.rows.length > 0) {
-      return res.status(409).json({ error: 'Email already registered' });
+      return res.status(409).json({ error: 'Ce pseudo est déjà pris' });
     }
 
     const id = generateId();
     const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
+    const displayName = name || username;
 
     await pool.query(
       `INSERT INTO users (id, email, password_hash, display_name, role, created_at)
        VALUES ($1, $2, $3, $4, 'viewer', NOW())`,
-      [id, email.toLowerCase(), passwordHash, name]
+      [id, username.toLowerCase(), passwordHash, displayName]
     );
 
-    const user = { id, email: email.toLowerCase(), display_name: name, role: 'viewer' };
+    const user = { id, email: username.toLowerCase(), display_name: displayName, role: 'viewer' };
     const token = signToken(user);
 
     return res.status(201).json({ token, user });
@@ -179,27 +179,27 @@ app.post('/api/register', async (req, res) => {
  * Returns a JWT and user info.
  */
 app.post('/api/login', async (req, res) => {
-  const { email, password } = req.body;
+  const { username, password } = req.body;
 
-  if (!email || !password) {
-    return res.status(400).json({ error: 'email and password are required' });
+  if (!username || !password) {
+    return res.status(400).json({ error: 'Pseudo et mot de passe obligatoires' });
   }
 
   try {
     const result = await pool.query(
       'SELECT id, email, password_hash, display_name, role FROM users WHERE email = $1',
-      [email.toLowerCase()]
+      [username.toLowerCase()]
     );
 
     if (result.rows.length === 0) {
-      return res.status(401).json({ error: 'Invalid email or password' });
+      return res.status(401).json({ error: 'Pseudo ou mot de passe incorrect' });
     }
 
     const user = result.rows[0];
     const valid = await bcrypt.compare(password, user.password_hash);
 
     if (!valid) {
-      return res.status(401).json({ error: 'Invalid email or password' });
+      return res.status(401).json({ error: 'Pseudo ou mot de passe incorrect' });
     }
 
     const token = signToken(user);
