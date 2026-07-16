@@ -542,16 +542,19 @@ app.get('*', (req, res) => {
 
 app.post('/api/students/link-by-creds', requireAuth, async (req, res) => {
   try {
-    const { firstname, username, password, dob } = req.body;
+    const { school, firstname, username, password, dob } = req.body;
     if (!firstname || !username || !password || !dob) {
       return res.status(400).json({ error: 'Tous les champs sont obligatoires' });
     }
 
-    // Find student matching the credentials
-    const student = await pool.query(
-      `SELECT id, name, school, username, mfa FROM students WHERE LOWER(username) = LOWER($1)`,
-      [username]
-    );
+    // Find student matching the credentials (optionally filtered by school)
+    let query = 'SELECT id, name, school, username, mfa, password FROM students WHERE LOWER(username) = LOWER($1)';
+    let params = [username];
+    if (school) {
+      query += ' AND LOWER(school) = LOWER($2)';
+      params.push(school);
+    }
+    const student = await pool.query(query, params);
 
     if (!student.rows.length) return res.status(404).json({ error: 'Élève non trouvé avec cet identifiant' });
 

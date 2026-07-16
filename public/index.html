@@ -719,6 +719,7 @@ tbody tr:last-child td{border-bottom:none}
           </div>
           <div class="section-body">
             <form onsubmit="linkStudentByCredentials(event)" style="display:flex;flex-direction:column;gap:.75rem;max-width:400px">
+              <input class="form-input" id="link-school" placeholder="École (ex: collegedebruxelles)" required />
               <input class="form-input" id="link-firstname" placeholder="Prénom de l'élève" required />
               <input class="form-input" id="link-username" placeholder="Identifiant SmartSchool" required />
               <input class="form-input" id="link-password" type="password" placeholder="Mot de passe SmartSchool" required />
@@ -1481,13 +1482,14 @@ async function linkStudentById(e) {
 
 async function linkStudentByCredentials(e) {
   e.preventDefault();
+  const school = document.getElementById('link-school').value.trim();
   const firstname = document.getElementById('link-firstname').value.trim();
   const username = document.getElementById('link-username').value.trim();
   const password = document.getElementById('link-password').value;
   const dob = document.getElementById('link-dob').value;
   const resultDiv = document.getElementById('link-student-result');
 
-  if (!firstname || !username || !password || !dob) {
+  if (!school || !firstname || !username || !password || !dob) {
     showToast('Remplis tous les champs', 'error');
     return;
   }
@@ -1496,7 +1498,7 @@ async function linkStudentByCredentials(e) {
     resultDiv.innerHTML = '<div style="color:#60a5fa;font-size:.85rem">Vérification en cours...</div>';
     const result = await apiFetch('/api/students/link-by-creds', {
       method: 'POST',
-      body: JSON.stringify({ firstname, username, password, dob })
+      body: JSON.stringify({ school, firstname, username, password, dob })
     });
     if (result.error) throw new Error(result.error);
     showToast(`"${result.student?.name}" lié avec succès !`, 'success');
