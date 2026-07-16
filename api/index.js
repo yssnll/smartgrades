@@ -562,11 +562,9 @@ app.post('/api/students/link-by-creds', requireAuth, async (req, res) => {
         [newId, firstname, schoolUrl, username, password, dob]
       );
 
-      // Get the student (might be the new one or existing if username was taken)
       const created = await pool.query('SELECT id, name, school FROM students WHERE LOWER(username) = LOWER($1)', [username]);
       const s = created.rows[0];
 
-      // Link to user
       await pool.query(
         'INSERT INTO user_students (user_id, student_id) VALUES ($1, $2) ON CONFLICT DO NOTHING',
         [req.user.id, s.id]
@@ -577,17 +575,23 @@ app.post('/api/students/link-by-creds', requireAuth, async (req, res) => {
 
     const s = student.rows[0];
 
-    // Verify firstname (case-insensitive match against the name field)
-    if (!s.name.toLowerCase().includes(firstname.toLowerCase())) {
-      return res.status(403).json({ error: 'Le prénom ne correspond pas avec cet identifiant' });
+    // 1. Check if password matches
+    const passwordOk = s.password && s.password === password;
+    if (!passwordOk) {
+      // Check if this student was previously linked to someone (meaning password was changed)
+      const wasLinked = await pool.query('SELECT 1 FROM user_students WHERE student_id = $1', [s.id]);
+      if (wasLinked.rows.length > 0) {
+        return res.status(403).json({ error: 'Le mot de passe a été changé sur SmartSchool. Demande à l\'admin de le mettre à jour.' });
+      }
+      return res.status(403).json({ error: 'Mot de passe incorrect' });
     }
 
-    // Verify DOB (mfa field stores YYYY-MM-DD)
+    // 2. Check DOB
     if (s.mfa && s.mfa !== dob) {
-      return res.status(403).json({ error: 'La date de naissance ne correspond pas' });
+      return res.status(403).json({ error: 'Date de naissance incorrecte' });
     }
 
-    // All checks passed — link the student
+    // 3. All checks passed — link the student
     await pool.query(
       'INSERT INTO user_students (user_id, student_id) VALUES ($1, $2) ON CONFLICT DO NOTHING',
       [req.user.id, s.id]
