@@ -550,22 +550,36 @@ app.post('/api/students/link-by-creds', requireAuth, async (req, res) => {
     }
     const student = await pool.query(query, params);
 
-    if (!student.rows.length) return res.status(404).json({ error: 'Élève non trouvé avec cet identifiant' });
+    if (!student.rows.length) {
+      // Student doesn't exist yet — create them with provided info
+      const schoolUrl = school || '';
+      const newId = generateId();
+
+      await pool.query(
+        `INSERT INTO students (id, name, school, username, password, mfa)
+         VALUES ($1, $2, $3, $4, $5, $6)
+         ON CONFLICT (username) DO UPDATE SET password = $5, mfa = $6`,
+        [newId, firstname, schoolUrl, username, password, dob]
+      );
+
+      // Get the student (might be the new one or existing if username was taken)
+      const created = await pool.query('SELECT id, name, school FROM students WHERE LOWER(username) = LOWER($1)', [username]);
+      const s = created.rows[0];
+
+      // Link to user
+      await pool.query(
+        'INSERT INTO user_students (user_id, student_id) VALUES ($1, $2) ON CONFLICT DO NOTHING',
+        [req.user.id, s.id]
+      );
+
+      return res.json({ success: true, student: { id: s.id, name: s.name, school: s.school }, new: true });
+    }
 
     const s = student.rows[0];
 
-    // Verify password
-    if (s.username !== username || (student.rows[0].password && student.rows[0].password !== password)) {
-      // Try matching password from the row
-      const fullStudent = await pool.query('SELECT password FROM students WHERE id = $1', [s.id]);
-      if (fullStudent.rows[0]?.password !== password) {
-        return res.status(403).json({ error: 'Mot de passe incorrect' });
-      }
-    }
-
     // Verify firstname (case-insensitive match against the name field)
     if (!s.name.toLowerCase().includes(firstname.toLowerCase())) {
-      return res.status(403).json({ error: 'Le prénom ne correspond pas' });
+      return res.status(403).json({ error: 'Le prénom ne correspond pas avec cet identifiant' });
     }
 
     // Verify DOB (mfa field stores YYYY-MM-DD)
