@@ -527,6 +527,57 @@ app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
+// ─── Link student by credentials ────────────────────────────────────────────
+
+app.post('/api/students/link-by-creds', requireAuth, async (req, res) => {
+  try {
+    const { firstname, username, password, dob } = req.body;
+    if (!firstname || !username || !password || !dob) {
+      return res.status(400).json({ error: 'Tous les champs sont obligatoires' });
+    }
+
+    // Find student matching the credentials
+    const student = await pool.query(
+      `SELECT id, name, school, username, mfa FROM students WHERE LOWER(username) = LOWER($1)`,
+      [username]
+    );
+
+    if (!student.rows.length) return res.status(404).json({ error: 'Élève non trouvé avec cet identifiant' });
+
+    const s = student.rows[0];
+
+    // Verify password
+    if (s.username !== username || (student.rows[0].password && student.rows[0].password !== password)) {
+      // Try matching password from the row
+      const fullStudent = await pool.query('SELECT password FROM students WHERE id = $1', [s.id]);
+      if (fullStudent.rows[0]?.password !== password) {
+        return res.status(403).json({ error: 'Mot de passe incorrect' });
+      }
+    }
+
+    // Verify firstname (case-insensitive match against the name field)
+    if (!s.name.toLowerCase().includes(firstname.toLowerCase())) {
+      return res.status(403).json({ error: 'Le prénom ne correspond pas' });
+    }
+
+    // Verify DOB (mfa field stores YYYY-MM-DD)
+    if (s.mfa && s.mfa !== dob) {
+      return res.status(403).json({ error: 'La date de naissance ne correspond pas' });
+    }
+
+    // All checks passed — link the student
+    await pool.query(
+      'INSERT INTO user_students (user_id, student_id) VALUES ($1, $2) ON CONFLICT DO NOTHING',
+      [req.user.id, s.id]
+    );
+
+    res.json({ success: true, student: { id: s.id, name: s.name, school: s.school } });
+  } catch (e) {
+    console.error('Link by creds error:', e);
+    res.status(500).json({ error: 'Erreur serveur' });
+  }
+});
+
 // ─── Sync status ──────────────────────────────────────────────────────────────
 // Grades are synced automatically every 2 hours via a cron job on the Moxt platform.
 // The fetch endpoints below report the last sync time.
